@@ -53,10 +53,13 @@ Every abbreviation will check what CMake generators are available and use the fi
 #  No cmake build directory has been configured yet
 
 # If one build directory exists, e.g. 'cmake-build-debug' expand to:
-set -l jobs (math (nproc) - 1) # Leave 1 CPU core to not freeze the system ;)                                                              cmake --build 'cmake-build-debug' --parallel $jobs --target all
+set -l jobs (math (nproc) - 1) # Leave 1 CPU core to not freeze the system ;)
+cmake --build 'cmake-build-debug' --parallel $jobs --target all
 
-# If multiple build directories exist, e.g. 'cmake-build-debug' and 'cmmake-build-release' then open a fzf prompt to select the build directory to build. and expand to:
-set -l jobs (math (nproc) - 1) # Leave 1 CPU core to not freeze the system ;)                                                              cmake --build '$selected_builddir' --parallel $jobs --target all
+# If multiple build directories exist, e.g. 'cmake-build-debug' and 'cmmake-build-release'
+# then open a fzf prompt to select the build directory to build. and expand to:
+set -l jobs (math (nproc) - 1) # Leave 1 CPU core to not freeze the system ;)
+cmake --build '$selected_builddir' --parallel $jobs --target all
 ```
 
 ### `cmcb{,d,r}`
