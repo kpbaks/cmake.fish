@@ -43,7 +43,7 @@ cmake -S . -B cmake-build-minsizerel -G 'Ninja' -DCMAKE_EXPORT_COMPILE_COMMANDS=
 ```
 
 Every abbreviation will check what CMake generators are available and use the first one found in `$PATH` from the following list:
-1. `ninja` 
+1. `ninja` Its faster than make, so I prefer to use it over make.
 2. `make`
 
 ### `cmb`
