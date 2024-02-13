@@ -151,7 +151,7 @@ function abbr_cmake_build_inner -a build_type
                 echo "# No cmake build directory has been configured yet."
                 return 0
             case 1
-                set -f builddir $build_dirs[1]
+                set -f builddir $builddirs[1]
             case "*" # 2 or more
                 if command --query fzf
                     # TODO: improve presentation of menu
