@@ -1,5 +1,32 @@
+# TODO: check if `cmake-build-{debug,release}` is ignored by `.gitignore` (if in a gitproject)
+# if not, then suggest to add it
+
+if not command --query cmake
+    printf "[cmake.fish] %serror%s: `cmake` not found in \$PATH, no abbreviations will be created\n" (set_color red) (set_color normal)
+    return 1
+end
+
+# All functions from here on assumes that `cmake` exists in `$PATH`
+
+function __cmake_version
+    command cmake --version | string match --regex --groups-only "(\d+\.\d+(\.\d+))" | read --line entire patch
+    string split . $entire
+end
+
 function abbr_cmake_common_configure_flags
     echo "-DCMAKE_EXPORT_COMPILE_COMMANDS=1"
+    __cmake_version | read --line major minor patch
+    # The compiler (gcc, clang) strips ANSI escape codes from its diagnostic output i.e. reporting errors and warnings,
+    #  if it detects that its stdout is not a tty (uses the syscall: `isatty(stdout)`). When invoked through cmake->ninja, it's stdout
+    # is attached to a pipe, but the compiler can be forced to always output ANSI escape codes by one of the following defines below:
+    if test $major -ge 3 -a $minor -ge 24
+        # cmake v3.24.* got support for a dedicated variable to control color diagnostics
+        # https://cmake.org/cmake/help/latest/variable/CMAKE_COLOR_DIAGNOSTICS.html
+        echo "-DCMAKE_COLOR_DIAGNOSTICS=ON"
+    else
+        # For older versions of cmake, this compiler flag is supported by both gcc and clang.
+        echo "-DCMAKE_CXX_FLAGS=-fdiagnostics-color=always"
+    end
 end
 
 function abbr_cmake_set_number_of_jobs
