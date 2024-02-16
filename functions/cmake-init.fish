@@ -9,8 +9,8 @@ function cmake-init -d "Bootstrap a CMake project from the context of the curren
     set -l reset (set_color normal)
     set -l red (set_color red)
     set -l green (set_color green)
+    set -l blue (set_color blue)
     set -l bold (set_color --bold)
-
 
     if set --query _flag_help
         printf "%sBootstrap a CMake project from the context of the current directory%s\n" $bold $reset
@@ -34,19 +34,62 @@ function cmake-init -d "Bootstrap a CMake project from the context of the curren
         return 1
     end
 
-    set -l compiler
+    # TODO: detect git and add gitignore with `cmake-build-*` and `compile_commands.json`
+    if command --query git; and command git rev-parse --is-inside-work-tree 2>/dev/null >&2
+        if not test -d .git
+            printf "%serror%s: inside git worktree, but $PWD is not the root dir where .git/ is\n" $red $reset
+            return 2
+        end
+
+        if not test -f .gitignore
+            # command touch .gitignore
+            echo "" >.gitignore
+            printf " - created .gitignore file\n"
+        end
+
+        set -l builddirs build (for build_type in (__cmake_build_types); __cmake_builddir_from_build_type $build_type; end)
+        set -l ignore_rules (command cat .gitignore)
+
+        for builddir in $builddirs
+            set -l already_ignored 0
+            for line in $ignore_rules
+                if string match --quiet "$builddir/" $line
+                    set already_ignored 1
+                    break
+                end
+            end
+            if test $already_ignored -eq 1
+                continue
+            end
+            echo "$builddir/" >>.gitignore
+            printf " - added to %s$builddir/%s to .gitignore\n" $blue $reset
+        end
+    end
+
+    set -l c_compiler
+    set -l cxx_compiler
     if set --query _flag_gcc
         if not command --query g++
             printf "%serror%s: g++ not found\n" $red $reset
             return 1
         end
-        set compiler (command --search g++)
+        set cxx_compiler (command --search g++)
+        if not command --query gcc
+            printf "%serror%s: gcc not found\n" $red $reset
+            return 1
+        end
+        set c_compiler (command --search gcc)
     else if set --query _flag_clang
+        if not command --query clang
+            printf "%serror%s: clang not found\n" $red $reset
+            return 1
+        end
+        set c_compiler (command --search clang)
         if not command --query clang++
             printf "%serror%s: clang++ not found\n" $red $reset
             return 1
         end
-        set compiler (command --search clang++)
+        set cxx_compiler (command --search clang++)
     else
         # TODO: not robust enough
         eval (status function) --gcc
@@ -103,13 +146,21 @@ function cmake-init -d "Bootstrap a CMake project from the context of the curren
 
     echo "project($project_name LANGUAGES $languages VERSION 0.1.0)" >>CMakeLists.txt
     echo "" >>CMakeLists.txt
-    echo "set(CMAKE_CXX_COMPILER $compiler)" >>CMakeLists.txt
     # TODO: determine the standard version from the compiler version
     set -l cxx_standard 23
+    set -l c_standard 23
+    echo "set(CMAKE_C_COMPILER $c_compiler)" >>CMakeLists.txt
+    echo "set(CMAKE_C_STANDARD $c_standard)" >>CMakeLists.txt
+    echo "set(CMAKE_C_EXTENSIONS OFF)" >>CMakeLists.txt
+    echo "set(CMAKE_C_STANDARD_REQUIRED ON)" >>CMakeLists.txt
+    echo "" >>CMakeLists.txt
+    echo "set(CMAKE_CXX_COMPILER $cxx_compiler)" >>CMakeLists.txt
     echo "set(CMAKE_CXX_STANDARD $cxx_standard)" >>CMakeLists.txt
     echo "set(CMAKE_CXX_STANDARD_REQUIRED ON)" >>CMakeLists.txt
     echo "set(CMAKE_CXX_EXTENSIONS OFF)" >>CMakeLists.txt
     echo "set(CMAKE_EXPORT_COMPILE_COMMANDS ON)" >>CMakeLists.txt
+    echo "" >>CMakeLists.txt
+
     if test $cmake_major -ge 3 -a $cmake_minor -ge 24
         echo "set(CMAKE_COLOR_DIAGNOSTICS ON)" >>CMakeLists.txt
     else
@@ -150,8 +201,6 @@ set(executable_targets)
         echo "add_executable($target_name $f)" >>CMakeLists.txt
         echo "list(APPEND executable_targets $target_name)" >>CMakeLists.txt
     end
-
-    # TODO: detect git and add gitignore with `cmake-build-*` and `compile_commands.json`
 
     # TODO: maybe use `cmake --system-information`
 

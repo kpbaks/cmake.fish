@@ -41,6 +41,10 @@ function __cmake_find_targets
     # TODO: implement
 end
 
+function __cmake_build_types
+    printf "%s\n" Debug Release RelWithDebInfo MinSizeRel
+end
+
 function __cmake_supported_build_type -a build_type
     argparse --min-args 1 --max-args 1 -- $argv; or return 2
     # status print-stack-trace
