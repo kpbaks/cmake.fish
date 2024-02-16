@@ -57,9 +57,9 @@ function cmake-init -d "Bootstrap a CMake project from the context of the curren
     set -l cmake_version (string join . $cmake_major $cmake_minor $cmake_patch)
 
     if test $cmake_major -ge 3 -a $cmake_minor -ge 16
-        echo "cmake_minimum_version(VERSION 3.16...$cmake_version FATAL_ERROR)" >>CMakeLists.txt
+        echo "cmake_minimum_required(VERSION 3.16...$cmake_version FATAL_ERROR)" >>CMakeLists.txt
     else
-        echo "cmake_minimum_version(VERSION $cmake_version FATAL_ERROR)" >>CMakeLists.txt
+        echo "cmake_minimum_required(VERSION $cmake_version FATAL_ERROR)" >>CMakeLists.txt
     end
 
     if command --query fd
@@ -87,7 +87,7 @@ function cmake-init -d "Bootstrap a CMake project from the context of the curren
         switch $extension
             case .c .cpp
                 # TODO: improve the regex to handle `auto main() -> int`
-                if string match --regex --quiet '^int main([^]]*)\s*{?' < $f
+                if string match --regex --quiet '^int main([^]]*)\s*{?' <$f
                     set -a binaries $f
                 end
         end
@@ -142,12 +142,18 @@ include_directories(include)
 set(executable_targets)
 " >>CMakeLists.txt
     for f in $binaries
+        if contains -- (path dirname $f | string split / --fields=1) build cmake-build-{debug,release,minsizerel,relwithdebinfo}
+            # Some source file in a build directory
+            continue
+        end
         set -l target_name (path basename $f | string split . --right --fields=1)
         echo "add_executable($target_name $f)" >>CMakeLists.txt
         echo "list(APPEND executable_targets $target_name)" >>CMakeLists.txt
     end
 
     # TODO: detect git and add gitignore with `cmake-build-*` and `compile_commands.json`
+
+    # TODO: maybe use `cmake --system-information`
 
     printf "%sCMakeLists.txt%s has been created with the following content:\n\n" $green $reset
 

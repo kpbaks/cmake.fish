@@ -13,7 +13,11 @@ function __cmake_version
     string split . $entire
 end
 
-function abbr_cmake_common_configure_flags
+function __cmake_common_configure_flags
+    # TODO: expose a universal variable the user can use to add common settings they always want to use
+    # TODO: Add a universal vailable to select the default compiler to use. Maybe "parse" CMakeLists.txt to see if they have
+    # specified it first.
+    echo -Wdeprecated
     echo "-DCMAKE_EXPORT_COMPILE_COMMANDS=1"
     __cmake_version | read --line major minor patch
     # The compiler (gcc, clang) strips ANSI escape codes from its diagnostic output i.e. reporting errors and warnings,
@@ -29,15 +33,15 @@ function abbr_cmake_common_configure_flags
     end
 end
 
-function abbr_cmake_set_number_of_jobs
+function __cmake_set_number_of_jobs
     echo "set -l jobs (math (nproc) - 1) # Leave 1 CPU core to not freeze the system ;)"
 end
 
-function abbr_cmake_find_targets
+function __cmake_find_targets
     # TODO: implement
 end
 
-function abbr_cmake_supported_build_type -a build_type
+function __cmake_supported_build_type -a build_type
     argparse --min-args 1 --max-args 1 -- $argv; or return 2
     # status print-stack-trace
     # supported build types taken from: https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html
@@ -48,9 +52,9 @@ function abbr_cmake_supported_build_type -a build_type
     end
 end
 
-function abbr_cmake_builddir_from_build_type -a build_type
+function __cmake_builddir_from_build_type -a build_type
     argparse --min-args 1 --max-args 1 -- $argv; or return 2
-    if not abbr_cmake_supported_build_type $build_type
+    if not __cmake_supported_build_type $build_type
         return 2
     end
 
@@ -68,7 +72,7 @@ function abbr_cmake_builddir_from_build_type -a build_type
     # end
 end
 
-function abbr_cmake_find_build_dirs
+function __cmake_find_build_dirs
     for f in *
         test -d $f; or continue
         test -d $f/CMakeFiles; or continue
@@ -77,7 +81,8 @@ function abbr_cmake_find_build_dirs
     end
 end
 
-function abbr_cmake_find_generator
+function __cmake_find_generator
+    # TODO: find other generators available on unix platforms
     if command --query ninja
         set -f generator Ninja
     else if command --query make
@@ -90,20 +95,16 @@ function abbr_cmake_find_generator
 end
 
 function abbr_cmake_configure -a build_type
-    if not abbr_cmake_supported_build_type $build_type
+    if not __cmake_supported_build_type $build_type
         return 2
     end
 
-    if not command --query cmake
-        echo "# `cmake` not found in \$PATH"
-        return 1
-    end
     if not test -f CMakeLists.txt
         echo "# ./CMakelists.txt not found in $PWD"
         return 1
     end
 
-    set -l generator (abbr_cmake_find_generator)
+    set -l generator (__cmake_find_generator)
     # TODO: list available generators
     if test $status -ne 0
         echo "# No \"cmake generator\" found in \$PATH"
@@ -111,9 +112,9 @@ function abbr_cmake_configure -a build_type
     end
 
 
-    set -l builddir (abbr_cmake_builddir_from_build_type $build_type)
+    set -l builddir (__cmake_builddir_from_build_type $build_type)
     # TODO: print notification if already configured, and add a timestamp to estimate how long ago it was configured
-    set -l configure_flags (abbr_cmake_common_configure_flags)
+    set -l configure_flags (__cmake_common_configure_flags)
     set -a configure_flags "-DCMAKE_BUILD_TYPE=$build_type"
 
     echo "cmake -S . -B $builddir -G '$generator' $configure_flags"
@@ -146,21 +147,17 @@ function abbr_cmake_build_inner -a build_type
     end
 
     # TODO: refactor into a function that checks prerequisites are met
-    if not command --query cmake
-        echo "# `cmake` not found in \$PATH"
-        return 1
-    end
     if not test -f CMakeLists.txt
         echo "# ./CMakelists.txt not found in $PWD"
         return 1
     end
 
     if test (count $argv) -eq 1
-        if not abbr_cmake_supported_build_type $build_type
+        if not __cmake_supported_build_type $build_type
             return 2
         end
 
-        set -f builddir (abbr_cmake_builddir_from_build_type $build_type)
+        set -f builddir (__cmake_builddir_from_build_type $build_type)
         # echo "builddir: $builddir"
         if not test -d $builddir; and set --query _flag_configure
             # Not configured yet. Notify user and expand configure abbr instead
@@ -171,7 +168,7 @@ function abbr_cmake_build_inner -a build_type
             return 0
         end
     else
-        set -l builddirs (abbr_cmake_find_build_dirs)
+        set -l builddirs (__cmake_find_build_dirs)
         # Only fuzzy find if no existing build dir found
         switch (count $builddirs)
             case 0
@@ -200,7 +197,7 @@ function abbr_cmake_build_inner -a build_type
         end
     end
 
-    abbr_cmake_set_number_of_jobs
+    __cmake_set_number_of_jobs
     echo "cmake --build '$builddir%' --parallel \$jobs --target all"
 end
 
@@ -239,11 +236,11 @@ abbr -a cmcb -f abbr_cmake_configure_debug_and_build --set-cursor
 abbr -a cmcdb -f abbr_cmake_configure_debug_and_build --set-cursor
 abbr -a cmcrb -f abbr_cmake_configure_release_and_build --set-cursor
 
-# abbr -a cmcb \
-#     "cmake $compile_commands -G $generator -S . -B build && cmake --build build --parallel \"(nproc)\""
-
-
 # ctest
 # abbr -a ct ctest --progress "-j(nproc)" --output-on-failure --test-dir build
 
 # cpack
+
+# functions in ./functions/*.fish
+abbr -a cmev cmake-explain-variables
+abbr -a cmep cmake-explain-properties
