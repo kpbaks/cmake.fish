@@ -49,6 +49,29 @@ function cmake-init -d "Bootstrap a CMake project from the context of the curren
 
         set -l builddirs build (for build_type in (__cmake_build_types); __cmake_builddir_from_build_type $build_type; end)
         set -l ignore_rules (command cat .gitignore)
+        begin
+            set -l compile_commands_json_ignored 0
+            set -l clang_index_ignored 0
+            for line in $ignore_rules
+                if string match --quiet "compile_commands.json" $line
+                    set compile_commands_json_ignored 1
+                    continue
+                end
+                if string match --quiet ".clang*" $line
+                    set clang_index_ignored 1
+                end
+            end
+
+            if test $compile_commands_json_ignored -eq 0
+                echo "compile_commands.json" >>.gitignore
+                printf " - added to %scompile_commands.json%s to .gitignore\n" $blue $reset
+            end
+
+            if test $clang_index_ignored -eq 0
+                echo ".clang/" >>.gitignore
+                printf " - added to %s.clang/%s to .gitignore\n" $blue $reset
+            end
+        end
 
         for builddir in $builddirs
             set -l already_ignored 0

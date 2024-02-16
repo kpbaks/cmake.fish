@@ -248,3 +248,4 @@ abbr -a cmcrb -f abbr_cmake_configure_release_and_build --set-cursor
 # functions in ./functions/*.fish
 abbr -a cmev cmake-explain-variables
 abbr -a cmep cmake-explain-properties
+abbr -a cmi cmake-init
