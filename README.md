@@ -1,5 +1,5 @@
 # cmake.fish
-A couple of fish abbreviations to make cmake less of a headache to work with.  
+A couple of fish abbreviations to make cmake less of a headache to work with.
 
 ## Installation
 
@@ -9,8 +9,7 @@ A couple of fish abbreviations to make cmake less of a headache to work with.
 fisher install kpbaks/cmake.fish
 ```
 
-
-## Abbreveations
+## Abbreviations
 
 ```fish
 # cmake configure
@@ -25,6 +24,8 @@ abbr -a cmb -f abbr_cmake_build --set-cursor
 abbr -a cmcb -f abbr_cmake_configure_debug_and_build --set-cursor
 abbr -a cmcdb -f abbr_cmake_configure_debug_and_build --set-cursor
 abbr -a cmcrb -f abbr_cmake_configure_release_and_build --set-cursor
+
+abbr -a cmi -f __cmake::abbr::cmake-init
 ```
 
 Every abbreviation will only expand if the current directory contains a `CMakeLists.txt` file, and `cmake` is found in `$PATH`.
@@ -34,7 +35,7 @@ Every abbreviation will only expand if the current directory contains a `CMakeLi
 ```fish
 # cmc{,d} ->
 cmake -S . -B cmake-build-debug -G 'Ninja' -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Debug
-# cmcr -> 
+# cmcr ->
 cmake -S . -B cmake-build-release -G 'Ninja' -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Release
 # cmcw ->
 cmake -S . -B cmake-build-relwithdebinfo -G 'Ninja' -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=RelWithDebInfo
@@ -68,7 +69,13 @@ A combination of `cmc{,d,r,w,m}` and `cmb` abbreviations.
 
 ```fish
 # e.g. cmcrb ->
-cmake -S . -B cmake-build-release -G 'Ninja' -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Release                                  
+cmake -S . -B cmake-build-release -G 'Ninja' -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Release
 set -l jobs (math (nproc) - 1) # Leave 1 CPU core to not freeze the system ;)
 cmake --build 'cmake-build-release' --parallel $jobs --target all
 ```
+
+---
+
+## Functions
+
+#### `cmake-init`

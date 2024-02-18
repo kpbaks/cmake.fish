@@ -241,22 +241,46 @@ endif()
         echo "add_compile_options(-fuse-ld=gold) # Use the GNU Gold Linker (gold) instead of the default linker." >>CMakeLists.txt
     end
 
+    set -l library_dependencies
+
+    echo "" >>CMakeLists.txt
+    echo "include(FetchContent)" >>CMakeLists.txt
+
+    begin
+        echo "
+# Similar to `dbg!()` in Rust
+FetchContent_Declare(dbg_macro GIT_REPOSITORY https://github.com/sharkdp/dbg-macro)
+FetchContent_MakeAvailable(dbg_macro)
+# add_compile_definitions(DBG_MACRO_DISABLE) # disable the `dbg()` macro (i.e. make it a no-op)
+# add_compile_definitions(DBG_NO_WARNING) # disable the \"'dbg.h' header is included in your code base\" warnings
+# add_compile_definitions(DBG_NO_WARNING) # force colored output and skip tty checks.
+# use `dbg(dbg::time());` to print a timestamp
+" >>CMakeLists.txt
+    end
+
+    set -a library_dependencies dbg_macro
+
     if test -d include
         echo "
 include_directories(include)
 " >>CMakeLists.txt
     end
 
+
     echo "
 set(executable_targets)
 " >>CMakeLists.txt
     for f in $binaries
-        if contains -- (path dirname $f | string split / --fields=1) build cmake-build-{debug,release,minsizerel,relwithdebinfo}
+        # if contains -- (path dirname $f | string split / --fields=1) build cmake-build-{debug,release,minsizerel,relwithdebinfo}
+        if contains -- (path dirname $f | string split / --fields=1) $builddirs
             # Some source file in a build directory
             continue
         end
         set -l target_name (path basename $f | string split . --right --fields=1)
         echo "add_executable($target_name $f)" >>CMakeLists.txt
+        if test (count $library_dependencies) -gt 0
+            echo "target_link_libraries($target_name PRIVATE $library_dependencies)" >>CMakeLists.txt
+        end
         echo "list(APPEND executable_targets $target_name)" >>CMakeLists.txt
     end
 
