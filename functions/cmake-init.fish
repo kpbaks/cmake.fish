@@ -34,7 +34,8 @@ function cmake-init -d "Bootstrap a CMake project from the context of the curren
         return 1
     end
 
-    # TODO: detect git and add gitignore with `cmake-build-*` and `compile_commands.json`
+    set -l builddirs build (for build_type in (__cmake_build_types); __cmake_builddir_from_build_type $build_type; end)
+
     if command --query git; and command git rev-parse --is-inside-work-tree 2>/dev/null >&2
         if not test -d .git
             printf "%serror%s: inside git worktree, but $PWD is not the root dir where .git/ is\n" $red $reset
@@ -47,7 +48,6 @@ function cmake-init -d "Bootstrap a CMake project from the context of the curren
             printf " - created .gitignore file\n"
         end
 
-        set -l builddirs build (for build_type in (__cmake_build_types); __cmake_builddir_from_build_type $build_type; end)
         set -l ignore_rules (command cat .gitignore)
         begin
             set -l compile_commands_json_ignored 0
@@ -139,6 +139,10 @@ function cmake-init -d "Bootstrap a CMake project from the context of the curren
     set -l languages
 
     for f in $source_files
+        if contains -- (path basename $f) $builddirs
+            continue
+        end
+
         set -l extension (path extension $f)
         switch $extension
             case .c .h
@@ -152,8 +156,7 @@ function cmake-init -d "Bootstrap a CMake project from the context of the curren
         end
         switch $extension
             case .c .cpp
-                # TODO: improve the regex to handle `auto main() -> int`
-                if string match --regex --quiet '^int main([^]]*)\s*{?' <$f
+                if string match --regex --quiet '^(auto|int) +main\([^)]*\)\s*(-> +int)?' <$f
                     set -a binaries $f
                 end
         end
@@ -194,7 +197,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always")
 ' >>CMakeLists.txt
     end
 
-
     echo "
 if (CMAKE_CXX_COMPILER_ID STREQUAL \"GNU\" OR CMAKE_CXX_COMPILER_ID STREQUAL \"Clang\")
     set(CMAKE_CXX_FLAGS \"\${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -Werror\")
@@ -203,8 +205,26 @@ endif()
 
     # TODO: set compiler more flags
 
+    echo "add_compile_options(-march=native)" >>CMakeLists.txt
+    # TODO: detect glibc or musl
+    # echo "add_compile_options(-mglibc)" >>CMakeLists.txt
+    # echo "add_compile_options(-mmusl)" >>CMakeLists.txt
 
+    echo "add_compile_options(-fno-exceptions)" >>CMakeLists.txt
+    echo "add_compile_options(-fno-rtti)" >>CMakeLists.txt
+    echo "add_compile_options(-fno-omit-frame-pointer)" >>CMakeLists.txt
+    echo "add_compile_options(-fno-strict-aliasing)" >>CMakeLists.txt
+    echo "add_compile_options(-fno-strict-overflow)" >>CMakeLists.txt
 
+    # https://gcc.gnu.org/onlinedocs/gcc-13.2.0/gcc/x86-Options.html
+    # echo "add_compile_options(-fvisibility=hidden)" >>CMakeLists.txt
+
+    echo "# Sanitizers
+# add_compile_options(-fsanitize=address) # AddressSanitizer
+# add_compile_options(-fsanitize=undefined) # UndefinedBehaviorSanitizer
+# add_compile_options(-fsanitize=thread) # ThreadSanitizer
+# add_compile_options(-fsanitize=memory) # MemorySanitizer
+" >>CMakeLists.txt
 
     if test -d include
         echo "
