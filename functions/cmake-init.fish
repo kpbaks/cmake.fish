@@ -256,9 +256,20 @@ FetchContent_MakeAvailable(dbg_macro)
 # add_compile_definitions(DBG_NO_WARNING) # force colored output and skip tty checks.
 # use `dbg(dbg::time());` to print a timestamp
 " >>CMakeLists.txt
+
+        set -a library_dependencies dbg_macro
     end
 
-    set -a library_dependencies dbg_macro
+    begin
+        echo "
+FetchContent_Declare(spdlog GIT_REPOSITORY https://github.com/gabime/spdlog.git GIT_TAG v1.13.0)
+FetchContent_MakeAvailable(spdlog)
+find_package(spdlog REQUIRED)
+" >>CMakeLists.txt
+
+        set -a library_dependencies spdlog::spdlog
+    end
+
 
     if test -d include
         echo "
