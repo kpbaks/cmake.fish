@@ -226,6 +226,21 @@ endif()
 # add_compile_options(-fsanitize=memory) # MemorySanitizer
 " >>CMakeLists.txt
 
+    # https://gcc.gnu.org/onlinedocs/gcc-13.2.0/gcc/Instrumentation-Options.html#index-prof
+    echo "# add_compile_options(-p) # Generate extra code to write profile information suitable for the analysis program prof" >>CMakeLists.txt
+    # https://gcc.gnu.org/onlinedocs/gcc-13.2.0/gcc/Instrumentation-Options.html#index-gcov
+    echo "# add_compile_options(--coverage) # Enable coverage testing that `gcov` can analyze" >>CMakeLists.txt
+
+    echo "# add_compile_options(-flto) # Link-time optimization" >>CMakeLists.txt
+
+    if command --query mold
+        echo "add_compile_options(-fuse-ld=mold) # Use the Modern Linker (mold) instead of the default linker." >>CMakeLists.txt
+    else if command --query lld
+        echo "add_compile_options(-fuse-ld=lld) # Use the LLVM Linker (lld) instead of the default linker." >>CMakeLists.txt
+    else if command --query gold
+        echo "add_compile_options(-fuse-ld=gold) # Use the GNU Gold Linker (gold) instead of the default linker." >>CMakeLists.txt
+    end
+
     if test -d include
         echo "
 include_directories(include)
