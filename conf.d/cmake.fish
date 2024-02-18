@@ -248,4 +248,25 @@ abbr -a cmcrb -f abbr_cmake_configure_release_and_build --set-cursor
 # functions in ./functions/*.fish
 abbr -a cmev cmake-explain-variables
 abbr -a cmep cmake-explain-properties
-abbr -a cmi cmake-init
+
+function __cmake::abbr::cmake-init
+    if command --query gcc
+        set -f gcc_available 1
+    end
+    if command --query clang
+        set -f clang_available 1
+    end
+    if set --query gcc_available; and set --query clang_available
+        echo "# Both gcc and clang are available in \$PATH, use --gcc or --clang to select which compiler to use"
+        echo "cmake-init"
+    else if set --query gcc_available
+        echo "cmake-init --gcc"
+    else if set --query clang_available
+        echo "cmake-init --clang"
+    else
+        echo "# gcc and clang are not available in \$PATH, you need one of them to compile C/C++ code!"
+        echo "cmake-init"
+    end
+end
+
+abbr -a cmi -f __cmake::abbr::cmake-init
