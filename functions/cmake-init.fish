@@ -1,4 +1,5 @@
 function cmake-init -d "Bootstrap a CMake project from the context of the current directory"
+    # IDEA: create flake.nix
     set -l options h/help g-gcc c-clang
 
     if not argparse $options -- $argv
@@ -9,12 +10,13 @@ function cmake-init -d "Bootstrap a CMake project from the context of the curren
     set -l reset (set_color normal)
     set -l red (set_color red)
     set -l green (set_color green)
+    set -l yellow (set_color yellow)
     set -l blue (set_color blue)
     set -l bold (set_color --bold)
 
     if set --query _flag_help
+        # TODO: finish help
         printf "%sBootstrap a CMake project from the context of the current directory%s\n" $bold $reset
-
         return 0
     end >&2
 
@@ -175,12 +177,12 @@ function cmake-init -d "Bootstrap a CMake project from the context of the curren
     # TODO: determine the standard version from the compiler version
     set -l cxx_standard 23
     set -l c_standard 23
-    echo "set(CMAKE_C_COMPILER $c_compiler)" >>CMakeLists.txt
+    echo "# set(CMAKE_C_COMPILER $c_compiler)" >>CMakeLists.txt
     echo "set(CMAKE_C_STANDARD $c_standard)" >>CMakeLists.txt
     echo "set(CMAKE_C_EXTENSIONS OFF)" >>CMakeLists.txt
     echo "set(CMAKE_C_STANDARD_REQUIRED ON)" >>CMakeLists.txt
     echo "" >>CMakeLists.txt
-    echo "set(CMAKE_CXX_COMPILER $cxx_compiler)" >>CMakeLists.txt
+    echo "# set(CMAKE_CXX_COMPILER $cxx_compiler)" >>CMakeLists.txt
     echo "set(CMAKE_CXX_STANDARD $cxx_standard)" >>CMakeLists.txt
     echo "set(CMAKE_CXX_STANDARD_REQUIRED ON)" >>CMakeLists.txt
     echo "set(CMAKE_CXX_EXTENSIONS OFF)" >>CMakeLists.txt
@@ -203,6 +205,21 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL \"GNU\" OR CMAKE_CXX_COMPILER_ID STREQUAL \"C
 endif()
     " >>CMakeLists.txt
 
+    if command --query sccache
+        echo '
+find_program(SCCACHE sccache REQUIRED)
+
+set(CMAKE_C_COMPILER_LAUNCHER ${SCCACHE})
+set(CMAKE_CXX_COMPILER_LAUNCHER ${SCCACHE})
+# set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT Embedded)
+cmake_policy(SET CMP0141 NEW)
+' >>CMakeLists.txt
+    else
+        set -l sccache_url https://github.com/mozilla/sccache
+        printf '%swarn:%s sccache not found (see %s)\n' $yellow $reset $sccache_url
+    end
+
+    # clang-tidy , clang-format
     # TODO: set compiler more flags
 
     echo "add_compile_options(-march=native)" >>CMakeLists.txt
@@ -233,8 +250,10 @@ endif()
 
     echo "# add_compile_options(-flto) # Link-time optimization" >>CMakeLists.txt
 
+    # TODO: add info/warn for the other linkers
     if command --query mold
         echo "add_compile_options(-fuse-ld=mold) # Use the Modern Linker (mold) instead of the default linker." >>CMakeLists.txt
+        printf '%sinfo:%s found mold at %s%s%s. using it as linker\n' $green $reset (set_color $fish_color_command) (command --search mold) $reset
     else if command --query lld
         echo "add_compile_options(-fuse-ld=lld) # Use the LLVM Linker (lld) instead of the default linker." >>CMakeLists.txt
     else if command --query gold
