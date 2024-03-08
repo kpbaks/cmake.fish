@@ -199,6 +199,18 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always")
 ' >>CMakeLists.txt
     end
 
+    if test -f flake.nix -o -f shell.nix
+        echo '
+# ensure that `clangd` can find standard headers when using `nix shell` or `nix develop`
+set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
+    '
+    else
+        echo '
+# ensure that `clangd` can find standard headers when using `nix shell` or `nix develop`
+# set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
+    '
+    end
+
     echo "
 if (CMAKE_CXX_COMPILER_ID STREQUAL \"GNU\" OR CMAKE_CXX_COMPILER_ID STREQUAL \"Clang\")
     set(CMAKE_CXX_FLAGS \"\${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -Werror\")
