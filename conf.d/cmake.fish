@@ -311,4 +311,5 @@ function __cmake::abbr::cmake-target
 
     printf 'cmake --build %s --target %s\n' $builddir $selected_target
 end
-endr -a cmt -f __cmake::abbr::cmake-target
+
+abbr -a cmt -f __cmake::abbr::cmake-target
