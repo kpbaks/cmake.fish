@@ -1,5 +1,6 @@
 # TODO: check if `cmake-build-{debug,release}` is ignored by `.gitignore` (if in a gitproject)
 # if not, then suggest to add it
+# TODO: support CMakePresets.json
 
 if not command --query cmake
     printf "[cmake.fish] %serror%s: `cmake` not found in \$PATH, no abbreviations will be created\n" (set_color red) (set_color normal)
@@ -112,6 +113,12 @@ function abbr_cmake_configure -a build_type
     # TODO: list available generators
     if test $status -ne 0
         echo "# No \"cmake generator\" found in \$PATH"
+        echo "# The following generators are supported on unix platforms by cmake:"
+        echo "# - 'Ninja' requires `ninja` to be installed in \$PATH"
+        echo "# - 'Ninja Multi-Config' requires `ninja` to be installed in \$PATH"
+        echo "# - 'Unix Makefiles' requires `make` to be installed in \$PATH"
+        echo "# tip: prefer 'Ninja' over 'Unix Makefiles' for faster builds"
+
         return 1
     end
 
@@ -256,17 +263,52 @@ function __cmake::abbr::cmake-init
     if command --query clang
         set -f clang_available 1
     end
+    if test -f CMakeLists.txt
+        echo "# ./CMakelists.txt already exists in $PWD"
+    end
     if set --query gcc_available; and set --query clang_available
         echo "# Both gcc and clang are available in \$PATH, use --gcc or --clang to select which compiler to use"
-        echo "cmake-init"
+        echo cmake-init
     else if set --query gcc_available
         echo "cmake-init --gcc"
     else if set --query clang_available
         echo "cmake-init --clang"
     else
         echo "# gcc and clang are not available in \$PATH, you need one of them to compile C/C++ code!"
-        echo "cmake-init"
+        echo cmake-init
     end
 end
 
 abbr -a cmi -f __cmake::abbr::cmake-init
+
+function __cmake::abbr::cmake-run
+    if not test -f CMakeLists.txt
+        echo "# ./CMakelists.txt not found in $PWD"
+        return 1
+    end
+    # Look for existing builds directories, and see if they have any executable files
+    # use fzf to select which one to run
+    # __cmake_set_number_of_jobs
+    # echo "cmake --build . --target all --parallel $(nproc)"
+end
+
+
+abbr -a cmr -f __cmake::abbr::cmake-run
+
+
+function __cmake::abbr::cmake-target
+    # TODO: finish
+    if not test -f CMakeLists.txt
+        echo "# ./CMakelists.txt not found in $PWD"
+        return 1
+    end
+    set -l targets
+    command cmake --build $builddir --target help | while read -d ': ' target type
+        set -a targets $target
+    end
+
+    set -l selected_target (printf '%s\n' | command fzf)
+
+    printf 'cmake --build %s --target %s\n' $builddir $selected_target
+end
+endr -a cmt -f __cmake::abbr::cmake-target

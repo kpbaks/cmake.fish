@@ -199,6 +199,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always")
 ' >>CMakeLists.txt
     end
 
+    # https://mzhang.io/posts/2022-03-03-clangd-in-nix/
     if test -f flake.nix -o -f shell.nix
         echo '
 # ensure that `clangd` can find standard headers when using `nix shell` or `nix develop`
