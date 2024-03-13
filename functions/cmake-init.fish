@@ -1,6 +1,7 @@
 function cmake-init -d "Bootstrap a CMake project from the context of the current directory"
     # IDEA: create flake.nix
     # IDEA: add c++ modules support if new enough cmake and gcc/clang
+    # CMAKE_POSITION_INDEPENDENT_CODE
     set -l options h/help g-gcc c-clang
 
     if not argparse $options -- $argv
@@ -210,7 +211,7 @@ set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTOR
         echo '
 # ensure that `clangd` can find standard headers when using `nix shell` or `nix develop`
 # set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
-    '
+    ' >>CMakeLists.txt
     end
 
     echo "
@@ -241,7 +242,7 @@ cmake_policy(SET CMP0141 NEW)
     # echo "add_compile_options(-mglibc)" >>CMakeLists.txt
     # echo "add_compile_options(-mmusl)" >>CMakeLists.txt
 
-    echo "add_compile_options(-fno-exceptions)" >>CMakeLists.txt
+    echo "# add_compile_options(-fno-exceptions)" >>CMakeLists.txt
     echo "add_compile_options(-fno-rtti)" >>CMakeLists.txt
     echo "add_compile_options(-fno-omit-frame-pointer)" >>CMakeLists.txt
     echo "add_compile_options(-fno-strict-aliasing)" >>CMakeLists.txt
@@ -282,6 +283,7 @@ cmake_policy(SET CMP0141 NEW)
     begin
         echo "
 # Similar to `dbg!()` in Rust
+# `#include <dbg.h>`
 FetchContent_Declare(dbg_macro GIT_REPOSITORY https://github.com/sharkdp/dbg-macro)
 FetchContent_MakeAvailable(dbg_macro)
 # add_compile_definitions(DBG_MACRO_DISABLE) # disable the `dbg()` macro (i.e. make it a no-op)
@@ -295,12 +297,22 @@ FetchContent_MakeAvailable(dbg_macro)
 
     begin
         echo "
+# `#include <fmt/core.h>`
+FetchContent_Declare(fmt GIT_REPOSITORY https://github.com/fmtlib/fmt GIT_TAG master)
+FetchContent_MakeAvailable(fmt)
+" >>CMakeLists.txt
+
+        set -a library_dependencies fmt::fmt
+    end
+
+    begin
+        echo "
+# `#include <flux.hpp>`
 FetchContent_Declare(
     flux
     GIT_REPOSITORY https://github.com/tcbrindle/flux.git
     GIT_TAG main # Replace with a git commit id to fix a particular revision
 )
-
 FetchContent_MakeAvailable(flux)
         " >>CMakeLists.txt
 
@@ -309,9 +321,9 @@ FetchContent_MakeAvailable(flux)
 
     begin
         echo "
+# `#include <spdlog/spdlog.h>`
 FetchContent_Declare(spdlog GIT_REPOSITORY https://github.com/gabime/spdlog.git GIT_TAG v1.13.0)
 FetchContent_MakeAvailable(spdlog)
-find_package(spdlog REQUIRED)
 " >>CMakeLists.txt
 
         set -a library_dependencies spdlog::spdlog
@@ -340,6 +352,14 @@ set(executable_targets)
             echo "target_link_libraries($target_name PRIVATE $library_dependencies)" >>CMakeLists.txt
         end
         echo "list(APPEND executable_targets $target_name)" >>CMakeLists.txt
+    end
+
+    if test (count $binaries) -eq 0
+        echo "
+# add_executable(\${PROJECT_NAME} main.cpp)
+# add_library(\${PROJECT_NAME} lib.cpp)
+# target_link_libraries(\${PROJECT_NAME} PRIVATE $library_dependencies)
+        " >>CMakeLists.txt
     end
 
     # TODO: maybe use `cmake --system-information`
