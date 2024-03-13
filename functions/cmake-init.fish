@@ -1,5 +1,6 @@
 function cmake-init -d "Bootstrap a CMake project from the context of the current directory"
     # IDEA: create flake.nix
+    # IDEA: add c++ modules support if new enough cmake and gcc/clang
     set -l options h/help g-gcc c-clang
 
     if not argparse $options -- $argv
@@ -290,6 +291,20 @@ FetchContent_MakeAvailable(dbg_macro)
 " >>CMakeLists.txt
 
         set -a library_dependencies dbg_macro
+    end
+
+    begin
+        echo "
+FetchContent_Declare(
+    flux
+    GIT_REPOSITORY https://github.com/tcbrindle/flux.git
+    GIT_TAG main # Replace with a git commit id to fix a particular revision
+)
+
+FetchContent_MakeAvailable(flux)
+        " >>CMakeLists.txt
+
+        set -a library_dependencies flux::flux
     end
 
     begin
