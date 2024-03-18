@@ -282,6 +282,30 @@ cmake_policy(SET CMP0141 NEW)
 
     begin
         echo "
+FetchContent_Declare(argparse GIT_REPOSITORY https://github.com/p-ranav/argparse.git)
+FetchContent_MakeAvailable(argparse)
+        "
+
+        set -a library_dependencies argparse
+
+    end >>CMakeLists.txt
+
+    begin
+        echo "
+FetchContent_Declare(
+  Catch2
+  GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+  GIT_TAG        v3.5.3 # or a later release
+)
+
+# exposes 2 targets: `Catch2::Catch2` and `Catch2::Catch2WithMain`
+FetchContent_MakeAvailable(Catch2)
+        "
+
+    end >>CMakeLists.txt
+
+    begin
+        echo "
 # Similar to `dbg!()` in Rust
 # `#include <dbg.h>`
 FetchContent_Declare(dbg_macro GIT_REPOSITORY https://github.com/sharkdp/dbg-macro)
