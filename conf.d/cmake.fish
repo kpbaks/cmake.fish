@@ -297,6 +297,7 @@ function __cmake::abbr::cmake_run
     # __cmake_set_number_of_jobs
     # echo "cmake --build . --target all --parallel $(nproc)"
 
+    # TODO: refactor into function
     set -l builddirs (__cmake::find_build_dirs)
         # Only fuzzy find if no existing build dir found
         switch (count $builddirs)

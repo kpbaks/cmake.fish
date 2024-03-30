@@ -123,7 +123,7 @@ function cmake-init -d "Bootstrap a CMake project from the context of the curren
         return
     end
 
-    __cmake_version | read --line cmake_major cmake_minor cmake_patch
+    __cmake::version | read --line cmake_major cmake_minor cmake_patch
     set -l cmake_version (string join . $cmake_major $cmake_minor $cmake_patch)
 
     if test $cmake_major -ge 3 -a $cmake_minor -ge 16
