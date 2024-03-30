@@ -1,4 +1,4 @@
-function cmake-targets -d ''
+function cmake-targets -d '' -a builddir
     set -l options h/help j/json
     if not argparse $options -- $argv
         printf '\n'
@@ -36,7 +36,37 @@ function cmake-targets -d ''
 
     # TODO: find build directory
 
-    set -l builddir cmake-build-release
+
+
+    set -l builddirs (__cmake::find_build_dirs)
+    # Only fuzzy find if no existing build dir found
+    switch (count $builddirs)
+        case 0
+            echo "# No cmake build directory has been configured yet."
+            return 0
+        case 1
+            set -f builddir $builddirs[1]
+        case "*" # 2 or more
+            if command --query fzf
+                # TODO: improve presentation of menu
+                set -l fzf_opts \
+                    --height=~10% \
+                    --cycle \
+                    --header-first \
+                    --header="Select which cmake build directory to use"
+                # FIXME: handle case where no dir is selected i.e. user presses <esc>
+                printf "%s\n" $builddirs | command fzf $fzf_opts | read dir
+                commandline --function repaint
+                set -f builddir $dir
+            else
+                echo "# $(count $builddirs) configured build directories were found:"
+                printf "# - %s\n" $builddirs
+                echo "# Selecting the first one found as `fzf` was not found in \$PATH"
+                set -f builddir $builddirs[1]
+            end
+    end
+
+    # set -l builddir cmake-build-release
 
     if set --query _flag_json
         set -l phony_targets
