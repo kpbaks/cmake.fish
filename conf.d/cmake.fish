@@ -377,4 +377,4 @@ function abbr_cmake_watch
     echo watchexec --clear --restart -e cpp,cxx,h,hpp -- cmake --build cmake-build-release --parallel $jobs --target all
 end
 
-abbr -a cmw -f cmake_abbr_watch --set-cursor
+abbr -a cmw -f abbr_cmake_watch --set-cursor
