@@ -94,13 +94,13 @@ function __cmake::find_generators
         set -a generators Ninja
     end
     if command --query make
-    # echo "Unix Makefiles"
+        # echo "Unix Makefiles"
         set -a generators "Unix Makefiles"
     end
     if test (count $generators) -eq 0
         return 1
     else
-    printf "%s\n" $generators
+        printf "%s\n" $generators
     end
 end
 
@@ -299,32 +299,32 @@ function __cmake::abbr::cmake_run
 
     # TODO: refactor into function
     set -l builddirs (__cmake::find_build_dirs)
-        # Only fuzzy find if no existing build dir found
-        switch (count $builddirs)
-            case 0
-                echo "# No cmake build directory has been configured yet."
-                return 0
-            case 1
+    # Only fuzzy find if no existing build dir found
+    switch (count $builddirs)
+        case 0
+            echo "# No cmake build directory has been configured yet."
+            return 0
+        case 1
+            set -f builddir $builddirs[1]
+        case "*" # 2 or more
+            if command --query fzf
+                # TODO: improve presentation of menu
+                set -l fzf_opts \
+                    --height=30% \
+                    --cycle \
+                    --header-first \
+                    --header="Select which cmake build directory to use"
+                # FIXME: handle case where no dir is selected i.e. user presses <esc>
+                printf "%s\n" $builddirs | command fzf $fzf_opts | read dir
+                commandline --function repaint
+                set -f builddir $dir
+            else
+                echo "# $(count $builddirs) configured build directories were found:"
+                printf "# - %s\n" $builddirs
+                echo "# Selecting the first one found as `fzf` was not found in \$PATH"
                 set -f builddir $builddirs[1]
-            case "*" # 2 or more
-                if command --query fzf
-                    # TODO: improve presentation of menu
-                    set -l fzf_opts \
-                        --height=30% \
-                        --cycle \
-                        --header-first \
-                        --header="Select which cmake build directory to use"
-                    # FIXME: handle case where no dir is selected i.e. user presses <esc>
-                    printf "%s\n" $builddirs | command fzf $fzf_opts | read dir
-                    commandline --function repaint
-                    set -f builddir $dir
-                else
-                    echo "# $(count $builddirs) configured build directories were found:"
-                    printf "# - %s\n" $builddirs
-                    echo "# Selecting the first one found as `fzf` was not found in \$PATH"
-                    set -f builddir $builddirs[1]
-                end
-        end
+            end
+    end
 
     set -l executables (
         for f in $builddir/*
@@ -365,3 +365,16 @@ function __cmake::abbr::cmake_target
 end
 
 abbr -a cmt -f __cmake::abbr::cmake_target
+
+function abbr_cmake_watch
+    if not command --query watchexec
+        echo "# watchexec not installed"
+        return
+    end
+
+    # TODO: handle different configs, and more extensions
+    __cmake::abbr::set_number_of_jobs
+    echo watchexec --clear --restart -e cpp,cxx,h,hpp -- cmake --build cmake-build-release --parallel $jobs --target all
+end
+
+abbr -a cmw -f cmake_abbr_watch --set-cursor
