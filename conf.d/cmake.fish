@@ -374,7 +374,7 @@ function abbr_cmake_watch
 
     # TODO: handle different configs, and more extensions
     __cmake::abbr::set_number_of_jobs
-    echo watchexec --clear --restart -e cpp,cxx,h,hpp -- cmake --build cmake-build-release --parallel $jobs --target all
+    echo watchexec --timings --clear --restart -e cpp,cxx,h,hpp -- cmake --build cmake-build-release --parallel $jobs --target all
 end
 
 abbr -a cmw -f abbr_cmake_watch --set-cursor

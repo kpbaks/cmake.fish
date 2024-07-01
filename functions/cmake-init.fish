@@ -331,6 +331,23 @@ FetchContent_MakeAvailable(fmt)
     end
 
     begin
+
+
+        echo "
+# `#include <scn/scan.h>`
+# https://www.scnlib.dev/latest/index.html
+FetchContent_Declare(
+        scn
+        GIT_REPOSITORY  https://github.com/eliaskosunen/scnlib
+        GIT_TAG         v3.0.1
+        GIT_SHALLOW     TRUE
+)
+FetchContent_MakeAvailable(scn)
+" >>CMakeLists.txt
+        set -a library_dependencies scn::scn
+    end
+
+    begin
         echo "
 # `#include <flux.hpp>`
 FetchContent_Declare(
